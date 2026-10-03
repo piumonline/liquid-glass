@@ -44,6 +44,30 @@ body {
   background-color: #222;
 }
 
+/* Large type behind the glass: this is what makes the refraction legible. */
+.stage__text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  user-select: none;
+  pointer-events: none;
+}
+
+.stage__text span {
+  font-weight: 800;
+  line-height: 0.92;
+  letter-spacing: -0.03em;
+  color: rgba(255, 255, 255, 0.94);
+  text-shadow: 0 2px 26px rgba(0, 0, 0, 0.16);
+  /* Lines are already wrapped by fitLines(), so keep the DOM and the
+     rasterised WebGL backdrop breaking in exactly the same place. */
+  white-space: nowrap;
+}
+
 /* Invisible drag surface sitting above the rendered glass. */
 .dragger {
   position: absolute;
@@ -220,6 +244,29 @@ body {
 .field__label {
   flex-shrink: 0;
   white-space: nowrap;
+}
+
+/* Fields too wide for a single row (e.g. free text) stack instead. */
+.field--stack {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+}
+
+.field__text {
+  width: 100%;
+  padding: 6px 10px;
+  font-family: inherit;
+  font-size: 12px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  outline: none;
+}
+
+.field__text:focus {
+  border-color: rgba(255, 255, 255, 0.25);
 }
 
 .field__range {

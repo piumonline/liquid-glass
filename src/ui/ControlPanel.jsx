@@ -22,6 +22,21 @@ function Field({ field, value, onChange }) {
     );
   }
 
+  if (field.type === 'text') {
+    return (
+      <label className="field field--stack">
+        <span className="field__label">{field.label}</span>
+        <input
+          className="field__text"
+          type="text"
+          value={value}
+          placeholder={field.placeholder}
+          onChange={(e) => onChange(field.key, e.target.value)}
+        />
+      </label>
+    );
+  }
+
   if (field.type === 'select') {
     return (
       <label className="field">

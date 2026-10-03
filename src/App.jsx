@@ -6,6 +6,7 @@ import CodePanel from './ui/CodePanel';
 import ControlPanel from './ui/ControlPanel';
 
 import { CONTROL_GROUPS, DEFAULT_PARAMS } from './lib/controlSchema';
+import { composeBackdrop, fitLines } from './lib/displayText';
 import {
   DEFAULT_BACKGROUND,
   loadStoredBackground,
@@ -35,6 +36,10 @@ export default function App() {
   const [panelOpen, setPanelOpen] = useState(false);
   const [codeOpen, setCodeOpen] = useState(false);
   const [exportEngine, setExportEngine] = useState('svg');
+  const [viewport, setViewport] = useState(() => ({
+    w: window.innerWidth,
+    h: window.innerHeight,
+  }));
 
   const { position, setPosition, dragProps } = useDrag(centred);
 
@@ -60,7 +65,10 @@ export default function App() {
     let timer;
     const onResize = () => {
       clearTimeout(timer);
-      timer = setTimeout(() => setPosition(centred()), 150);
+      timer = setTimeout(() => {
+        setViewport({ w: window.innerWidth, h: window.innerHeight });
+        setPosition(centred());
+      }, 150);
     };
     window.addEventListener('resize', onResize);
     return () => {
@@ -93,6 +101,52 @@ export default function App() {
 
   const isWebGL = engine === 'webgl';
 
+  /* --- display text ------------------------------------------------- *
+   * Sized against the smaller viewport edge so one number works on a phone
+   * and on a desktop. Lines are wrapped here, once, so the DOM version and
+   * the rasterised version break identically.
+   * ------------------------------------------------------------------ */
+  const displayFontSize = Math.round(
+    Math.min(viewport.w, viewport.h) * 0.26 * params.displayTextScale,
+  );
+  const displayLines = useMemo(
+    () => fitLines(params.displayText, displayFontSize, viewport.w * 0.9),
+    [params.displayText, displayFontSize, viewport.w],
+  );
+
+  /* The WebGL shader can only sample a texture, so for that engine the text
+     has to be baked into the backdrop image. SVG refracts the real DOM and
+     needs nothing. Falls back to the plain image if the backdrop cannot be
+     rasterised (e.g. a cross-origin image without CORS headers). */
+  const [composedBackdrop, setComposedBackdrop] = useState(null);
+
+  useEffect(() => {
+    if (!background || !displayLines.length) {
+      setComposedBackdrop(null);
+      return undefined;
+    }
+
+    let cancelled = false;
+    composeBackdrop({
+      imageUrl: background,
+      lines: displayLines,
+      fontSize: displayFontSize,
+      width: viewport.w,
+      height: viewport.h,
+      scale: Math.min(window.devicePixelRatio || 1, 2),
+    })
+      .then((url) => {
+        if (!cancelled) setComposedBackdrop(url);
+      })
+      .catch(() => {
+        if (!cancelled) setComposedBackdrop(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [background, displayLines, displayFontSize, viewport.w, viewport.h]);
+
   return (
     <>
       <div className="stage">
@@ -101,10 +155,22 @@ export default function App() {
           style={{ background: `url("${background}") center/cover no-repeat` }}
         />
 
+        {/* The WebGL pane paints its own backdrop opaquely, so real text
+            behind it would be hidden; that engine gets the baked version. */}
+        {!isWebGL && displayLines.length > 0 && (
+          <div className="stage__text" aria-hidden="true">
+            {displayLines.map((line, i) => (
+              <span key={i} style={{ fontSize: displayFontSize }}>
+                {line}
+              </span>
+            ))}
+          </div>
+        )}
+
         {isWebGL ? (
           <Suspense fallback={null}>
             <LiquidGlassWebGL
-              background={background}
+              background={composedBackdrop || background}
               style={{ position: 'absolute', inset: 0 }}
               position={{
                 x: position.x + params.width / 2,

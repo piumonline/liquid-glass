@@ -46,6 +46,9 @@ Things worth knowing about the export:
   the preview.
 - **Self-contained.** The SVG engine needs nothing but React. The WebGL engine
   additionally needs `three`.
+- **Refracts real page content.** `LiquidGlass` distorts whatever is genuinely
+  behind it, so putting large type underneath is the quickest way to see the
+  effect — that's what the demo's **Display Text** control is for.
 
 ## Two engines
 
@@ -101,9 +104,10 @@ src/
     LiquidGlass.jsx
     LiquidGlassWebGL.jsx
   lib/
-    codeExport.js generates the copy-paste snippet from the sources above
-    controlSchema.js  shared parameter state + per-engine control layout
-    backgrounds.js    presets, localStorage, URL validation
+    codeExport.js    generates the copy-paste snippet from the sources above
+    controlSchema.js shared parameter state + per-engine control layout
+    displayText.js   line wrapping + backdrop rasterising for the display text
+    backgrounds.js   presets, localStorage, URL validation
   ui/             demo chrome (control panel, picker, export modal)
   hooks/useDrag.js
   styles/app.css  demo chrome only; the glass needs no stylesheet
@@ -116,6 +120,23 @@ you tuned. A few controls map onto different things per engine, which is why
 the control groups differ: the WebGL shader has no saturation or inner-shadow
 blur, and its `blur` works in a finer range, so the shared slider is scaled on
 the way in and out.
+
+## Display text
+
+Large type sits behind the glass so the refraction is easy to read — high
+contrast against the bezel is where the distortion shows up. Edit the wording
+and scale it from the **Display Text** group; clear the field to remove it.
+
+The two engines get the type differently, because a WebGL shader can only
+sample a texture:
+
+- **SVG** renders real DOM text, which the backdrop filter refracts directly.
+- **WebGL** has the text rasterised into the backdrop image first, so the
+  shader refracts it along with the photo.
+
+Both paths share one line-breaking routine (`fitLines`), so the type breaks in
+the same place either way. If a backdrop image can't be read cross-origin the
+composition is skipped and the plain image is used instead.
 
 ## Inspiration
 

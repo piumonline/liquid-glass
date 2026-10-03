@@ -36,6 +36,12 @@ export const DEFAULT_PARAMS = {
   // Outer shadow
   outerShadowBlur: 24,
 
+  // Scene: large type behind the glass, so refraction is easy to read.
+  // Size is a multiplier on the viewport, which keeps it sensible on both
+  // desktop and mobile.
+  displayText: 'Liquid Glass',
+  displayTextScale: 1,
+
   // Backdrop
   background: '',
 };
@@ -46,10 +52,30 @@ const fmt = {
   two: (v) => Number(v).toFixed(2),
   pct: (v) => `${Math.round(v)}%`,
   identity: (v) => v,
+  scale: (v) => `${Number(v).toFixed(2)}x`,
+};
+
+/**
+ * The display-text group is identical for both engines, so it is shared
+ * rather than repeated.
+ */
+const DISPLAY_TEXT_GROUP = {
+  title: 'Display Text',
+  fields: [
+    {
+      key: 'displayText',
+      label: 'Text',
+      type: 'text',
+      placeholder: 'Liquid Glass',
+      format: fmt.identity,
+    },
+    { key: 'displayTextScale', label: 'Size', min: 0.4, max: 2.5, step: 0.05, format: fmt.scale },
+  ],
 };
 
 export const CONTROL_GROUPS = {
   svg: [
+    DISPLAY_TEXT_GROUP,
     {
       title: 'Glass Shape',
       fields: [
@@ -110,6 +136,7 @@ export const CONTROL_GROUPS = {
   ],
 
   webgl: [
+    DISPLAY_TEXT_GROUP,
     {
       title: 'Glass',
       fields: [
